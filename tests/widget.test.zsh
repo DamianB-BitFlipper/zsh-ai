@@ -63,14 +63,25 @@ test_widget_init_hook_registers_widget_and_removes_itself() {
         esac
     }
 
+    # Mock bindkey
+    typeset -ga BINDKEY_CALLS
+    BINDKEY_CALLS=()
+    bindkey() {
+        BINDKEY_CALLS+=("$1:$2")
+    }
+
     # Initialize widget (registers the hook)
     _zsh_ai_init_widget
 
     # Simulate the precmd hook being called
     _zsh_ai_do_init
 
-    # Should have registered the widget
+    # Should have registered the widgets
     assert_equals "${MOCKED_WIDGETS[accept-line]}" "_zsh_ai_accept_line"
+    assert_equals "${MOCKED_WIDGETS[zsh-ai-send-buffer]}" "_zsh_ai_send_buffer"
+
+    # Should have bound Ctrl-O to the buffer sender
+    assert_equals "${BINDKEY_CALLS[1]}" "^O:zsh-ai-send-buffer"
 
     # Should have removed the hook (second call with -d flag)
     assert_equals "${HOOK_CALLS[2]}" "-d:precmd:_zsh_ai_do_init"
